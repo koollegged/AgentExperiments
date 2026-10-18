@@ -85,14 +85,8 @@ function spawnFood() {
 }
 
 function gameLoop() {
-  // Randomly change direction with 20% probability
-  const rand = Math.random();
-  if (rand < 0.2) {
-    const dirs = ['up','down','left','right'];
-    const opposites = {up:'down',down:'up',left:'right',right:'left'};
-    const available = dirs.filter(d => d !== opposites[direction]);
-    direction = available[Math.floor(Math.random()*available.length)];
-  }
+  // The snake's direction is controlled solely by arrow keys.
+  // No automatic/random direction changes.
 
   const head = { ...snake[0] };
   // Determine new head position
@@ -158,11 +152,7 @@ document.addEventListener('keydown', e => {
   }
 });
 
-restartButton.addEventListener('click', function(){
-  restartButton.disabled = true;
-  initGame();
-  restartButton.disabled = false;
-});
+restartButton.addEventListener('click', initGame);
 
 // Start the game initially
 initGame();
