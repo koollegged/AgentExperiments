@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Snake Game</title>
+<style>
+body {
+  background-color: #f0f0f0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+}
+#gameContainer {
+  position: relative;
+}
+canvas {
+  background: #fff;
+  border: 1px solid #000;
+}
+#score {
+  position: absolute;
+  top: 5px;
+  left: 5px;
+  font-family: Arial, sans-serif;
+  font-size: 18px;
+  font-weight: bold;
+}
+#restartButton {
+  margin-top: 10px;
+}
+</style>
+</head>
+<body>
+<div id="gameContainer">
+<canvas id="gameCanvas" width="400" height="400"></canvas>
+<div id="score">Score: 0</div>
+</div>
+<button id="restartButton">Restart</button>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const scoreElement = document.getElementById('score');
+const restartButton = document.getElementById('restartButton');
+
+const cellSize = 20;
+const cols = canvas.width / cellSize;
+const rows = canvas.height / cellSize;
+
+let snake = [];
+let direction = 'right';
+let score = 0;
+let food = {};
+let interval = null;
+let gameOver = false;
+
+function initGame() {
+  snake = [];
+  let startX = Math.floor(cols/2), startY = Math.floor(rows/2);
+  // Start with a snake of length 5
+  for (let i = 4; i >= 0; i--) snake.push({x: startX - i, y: startY});
+  direction = 'right';
+  score = 0;
+  updateScore();
+  spawnFood();
+  if (interval) clearInterval(interval);
+  interval = setInterval(gameLoop, 150);
+  gameOver = false;
+}
+
+function updateScore() {
+  scoreElement.textContent = 'Score: ' + score;
+}
+
+function spawnFood() {
+  let valid = false;
+  while (!valid) {
+    const fx = Math.floor(Math.random() * cols);
+    const fy = Math.floor(Math.random() * rows);
+    valid = snake.every(segment => segment.x !== fx || segment.y !== fy);
+    if (valid) food = {x: fx, y: fy};
+  }
+}
+
+function gameLoop() {
+  // Randomly change direction with 20% probability
+  const rand = Math.random();
+  if (rand < 0.2) {
+    const dirs = ['up','down','left','right'];
+    const opposites = {up:'down',down:'up',left:'right',right:'left'};
+    const available = dirs.filter(d => d !== opposites[direction]);
+    direction = available[Math.floor(Math.random()*available.length)];
+  }
+
+  const head = { ...snake[0] };
+  // Determine new head position
+  switch (direction) {
+    case 'up': head.y--; break;
+    case 'down': head.y++; break;
+    case 'left': head.x--; break;
+    case 'right': head.x++; break;
+  }
+  // Check collision with walls
+  if (head.x < 0 || head.x >= cols || head.y < 0 || head.y >= rows) {
+    endGame(); return;
+  }
+  // Check collision with self
+  for (let segment of snake) {
+    if (segment.x === head.x && segment.y === head.y) { endGame(); return; }
+  }
+  // Add new head
+  snake.unshift(head);
+  // Check food
+  if (head.x === food.x && head.y === food.y) {
+    score++; updateScore(); spawnFood();
+  } else {
+    snake.pop(); // remove tail
+  }
+  draw();
+}
+
+function draw() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  // Draw food
+  ctx.fillStyle = '#f00';
+  ctx.fillRect(food.x*cellSize, food.y*cellSize, cellSize, cellSize);
+  // Draw snake
+  ctx.fillStyle = '#0f0';
+  for (let segment of snake) {
+    ctx.fillRect(segment.x*cellSize, segment.y*cellSize, cellSize, cellSize);
+    ctx.strokeRect(segment.x*cellSize, segment.y*cellSize, cellSize, cellSize);
+  }
+}
+
+function endGame() {
+  clearInterval(interval); gameOver = true;
+  ctx.fillStyle = 'rgba(0,0,0,0.5)';
+  ctx.fillRect(0,0,canvas.width,canvas.height);
+  ctx.fillStyle = '#fff';
+  ctx.font = '30px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText('Game Over', canvas.width/2, canvas.height/2);
+}
+
+function changeDirection(newDir) {
+  const opposites = {up:'down',down:'up',left:'right',right:'left'};
+  if (opposites[newDir] !== direction) { direction = newDir; }
+}
+
+document.addEventListener('keydown', e => {
+  switch(e.key) {
+    case 'ArrowUp': changeDirection('up'); break;
+    case 'ArrowDown': changeDirection('down'); break;
+    case 'ArrowLeft': changeDirection('left'); break;
+    case 'ArrowRight': changeDirection('right'); break;
+  }
+});
+
+restartButton.addEventListener('click', function(){
+  restartButton.disabled = true;
+  initGame();
+  restartButton.disabled = false;
+});
+
+// Start the game initially
+initGame();
+</script>
+</body>
+</html>
